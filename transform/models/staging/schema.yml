@@ -36,23 +36,24 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values:
-                - United Kingdom
-                - Germany
-                - France
-                - Netherlands
-                - Belgium
-                - Spain
-                - Australia
-                - Switzerland
-                - Portugal
-                - Norway
-                - Sweden
-                - Denmark
-                - Finland
-                - United States
-                - Japan
-                - Singapore
+              arguments:
+                values:
+                  - United Kingdom
+                  - Germany
+                  - France
+                  - Netherlands
+                  - Belgium
+                  - Spain
+                  - Australia
+                  - Switzerland
+                  - Portugal
+                  - Norway
+                  - Sweden
+                  - Denmark
+                  - Finland
+                  - United States
+                  - Japan
+                  - Singapore
 
       - name: line_total_gbp
         description: Computed revenue for this line (quantity x price).

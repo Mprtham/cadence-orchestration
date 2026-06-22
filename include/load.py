@@ -12,8 +12,10 @@ import duckdb
 
 log = logging.getLogger(__name__)
 
+CREATE_SCHEMA = "CREATE SCHEMA IF NOT EXISTS raw"
+
 DDL = """
-CREATE TABLE IF NOT EXISTS raw_orders (
+CREATE TABLE IF NOT EXISTS raw.raw_orders (
     invoice_no   VARCHAR,
     stock_code   VARCHAR,
     description  VARCHAR,
@@ -35,7 +37,7 @@ def get_db_path() -> str:
 
 def load_orders(run_date: str, csv_path: str) -> int:
     """
-    Load orders from *csv_path* into raw_orders for *run_date*.
+    Load orders from *csv_path* into raw.raw_orders for *run_date*.
     Deletes existing rows for that date first so re-runs are safe.
     Returns the number of rows inserted.
     """
@@ -43,17 +45,18 @@ def load_orders(run_date: str, csv_path: str) -> int:
     log.info("Connecting to DuckDB at %s", db_path)
 
     with duckdb.connect(db_path) as conn:
+        conn.execute(CREATE_SCHEMA)
         conn.execute(DDL)
 
         conn.execute(
-            "DELETE FROM raw_orders WHERE run_date = ?",
+            "DELETE FROM raw.raw_orders WHERE run_date = ?",
             [run_date],
         )
         log.info("Deleted existing rows for run_date=%s", run_date)
 
         conn.execute(
             """
-            INSERT INTO raw_orders
+            INSERT INTO raw.raw_orders
             SELECT
                 invoice_no,
                 stock_code,
@@ -70,7 +73,7 @@ def load_orders(run_date: str, csv_path: str) -> int:
         )
 
         row_count = conn.execute(
-            "SELECT COUNT(*) FROM raw_orders WHERE run_date = ?",
+            "SELECT COUNT(*) FROM raw.raw_orders WHERE run_date = ?",
             [run_date],
         ).fetchone()[0]
 
