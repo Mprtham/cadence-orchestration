@@ -1,18 +1,29 @@
 # Cadence
 
-A scheduled, self-healing data pipeline. Companion to [Pulse](https://github.com/Mprtham/pulse).
+Pulse builds the pipeline. Cadence operates it on a schedule. Companion project: [Pulse](https://github.com/Mprtham/pulse)
 
-**Cadence operates what Pulse builds.** An Apache Airflow DAG runs on an hourly schedule, generates synthetic UK-retail orders, loads them into DuckDB, transforms them with dbt, and gates on dbt tests. If any step fails after two retries, a Discord alert fires. Past dates can be re-run at any time without double-counting.
-
-![DAG graph](docs/dag-graph.png)
+![Airflow DAG graph](docs/dag-graph.png)
+[Full grid view (PDF)](docs/retail_daily-grid-airflow.pdf)
 
 ---
 
-## Pipeline in action
+## Why
 
-[Airflow Grid view — retail_daily DAG](docs/retail_daily-grid-airflow.pdf)
+Data pipelines fail. When they do, someone usually finds out hours later from a broken dashboard. Cadence runs the pipeline on a schedule, retries on failure, alerts the moment something stays broken, and can re-run any past day safely. It is the operations layer that keeps data trustworthy.
 
-All four tasks (`generate → load_to_duckdb → dbt_run → dbt_test`) completing successfully across scheduled runs.
+## Who it is for
+
+Shows the orchestration skills a Data Engineer uses daily. The people who benefit: data teams who need pipelines that run unattended, and engineering leads who need to know the instant something breaks.
+
+## What it does
+
+- Runs on a timer (hourly)
+- Runs four steps in strict order: generate, load, transform, test
+- Retries failed steps automatically with exponential backoff
+- Alerts on Discord after retries are exhausted
+- Re-runs past dates without double-counting (idempotent)
+- Blocks bad data from reaching consumers via a dbt test gate
+- Blocks broken DAGs from merging via GitHub Actions
 
 ---
 
@@ -42,9 +53,9 @@ Requires Docker Desktop or Docker Engine.
 ```bash
 # 1. Copy and configure env
 cp .env.example .env
-# Edit .env — set CADENCE_DISCORD_WEBHOOK_URL if you want Discord alerts.
+# Edit .env - set CADENCE_DISCORD_WEBHOOK_URL if you want Discord alerts.
 
-# Linux/Mac only — set your UID so Airflow can write to mounted dirs
+# Linux/Mac only - set your UID so Airflow can write to mounted dirs
 echo "AIRFLOW_UID=$(id -u)" >> .env
 
 # 2. Initialise the database and create the admin user
@@ -54,7 +65,7 @@ docker compose up airflow-init
 docker compose up -d
 
 # 4. Open the UI
-# http://localhost:8080  — username: admin  password: admin
+# http://localhost:8080  username: admin  password: admin
 
 # 5. Unpause and trigger the DAG
 docker compose exec airflow-webserver airflow dags unpause retail_daily
@@ -133,13 +144,13 @@ The `transform/` directory holds the dbt project.
 transform/
   models/
     staging/
-      stg_orders.sql        — filters faults, computes line totals
-      schema.yml            — not_null, accepted_values tests
-      sources.yml           — points at raw_orders in DuckDB
+      stg_orders.sql        - filters faults, computes line totals
+      schema.yml            - not_null, accepted_values tests
+      sources.yml           - points at raw_orders in DuckDB
     marts/
-      mart_daily_revenue.sql    — revenue by calendar day
-      mart_country_revenue.sql  — revenue by country with share %
-      schema.yml                — unique, not_null tests
+      mart_daily_revenue.sql    - revenue by calendar day
+      mart_country_revenue.sql  - revenue by country with share %
+      schema.yml                - unique, not_null tests
 ```
 
 Run manually:
